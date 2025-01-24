@@ -13,7 +13,7 @@ GMAIL_USER = os.getenv("GMAIL_USER")
 GMAIL_PASSWORD = os.getenv("GMAIL_PASSWORD")
 RECIPIENTS = os.getenv("RECIPIENTS").split(",")
 
-def send_email(subject, body):
+def send_email(subject, body, html=False):
     try:
         # Create the email
         msg = MIMEMultipart()
@@ -22,7 +22,10 @@ def send_email(subject, body):
         msg["Subject"] = subject
 
         # Email body
-        msg.attach(MIMEText(body, "plain"))
+        if html:
+            msg.attach(MIMEText(body, "html"))
+        else:
+            msg.attach(MIMEText(body, "plain"))
 
         # Connect to Gmail SMTP server
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
@@ -34,6 +37,7 @@ def send_email(subject, body):
 
     except Exception as e:
         print(f"Error sending email: {e}")
+
 
 # Example Usage
 if __name__ == "__main__":

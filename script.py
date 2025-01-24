@@ -107,21 +107,97 @@ def notify_new_ipos(ipo_list):
         print("No new IPOs to notify.")
         return
 
-    body = "Apply for the following IPOs:\n\n"
+    # Build the HTML email body
+    body = """
+    <html>
+    <head>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+            }
+            h2 {
+                color: #007BFF;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+                font-size: 14px;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+            th {
+                background-color: #f4f4f4;
+                color: #333;
+            }
+            tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+            .button {
+                display: inline-block;
+                padding: 10px 15px;
+                margin: 10px 5px 0;
+                font-size: 14px;
+                color: white;
+                background-color: #007BFF;
+                text-decoration: none;
+                border-radius: 4px;
+            }
+            .button:hover {
+                background-color: #0056b3;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>Apply for the following IPOs:</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Est Listing Gain</th>
+                    <th>Open Date</th>
+                    <th>Close Date</th>
+                    <th>Size</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
     for ipo in new_ipos:
-        body += (
-            f"Name: {ipo['Name']}\n"
-            f"Status: {ipo['Status']}\n"
-            f"Est Listing Gain: {ipo['Est Listing']}\n"
-            f"Open Date: {ipo['Open Date']}\n"
-            f"Close Date: {ipo['Close Date']}\n"
-            f"Size: {ipo['Size']}\n\n"
-        )
+        body += f"""
+            <tr>
+                <td>{ipo['Name']}</td>
+                <td>{ipo['Status']}</td>
+                <td>{ipo['Est Listing']}</td>
+                <td>{ipo['Open Date']}</td>
+                <td>{ipo['Close Date']}</td>
+                <td>{ipo['Size']}</td>
+            </tr>
+        """
+    body += """
+            </tbody>
+        </table>
+        <p>
+            <a href="https://groww.in/ipo" class="button" target="_blank">Apply on Groww</a>
+            <a href="https://dhan.co/ipo" class="button" target="_blank">Apply on Dhan</a>
+        </p>
+        <p>Happy Investing!</p>
+    </body>
+    </html>
+    """
 
-    send_email("New Qualified IPOs", body)
+    # Send email notification
+    send_email("New Qualified IPOs", body, html=True)
 
+    # Update the notified IPOs
     notified_ipos.update(ipo["Name"] for ipo in new_ipos)
     save_notified_ipos(notified_ipos)
+
 
 if __name__ == "__main__":
     print("Scraping IPO table...")
