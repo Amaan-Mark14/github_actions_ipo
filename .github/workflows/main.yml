@@ -22,29 +22,41 @@ jobs:
           path: ./  # Save the artifact in the working directory
         continue-on-error: true  # Ignore if the artifact doesn’t exist (e.g., first run)
 
-      # Step 3: Set up Python
+      # Step 3: Debug artifact (optional but recommended)
+      - name: Debug artifact
+        run: |
+          if [ -f notified_ipos.txt ]; then
+            echo "Artifact downloaded successfully"
+            echo "Contents of notified_ipos.txt:"
+            cat notified_ipos.txt
+          else
+            echo "No artifact found, starting fresh"
+          fi
+
+      # Step 4: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.9"
 
-      # Step 4: Install dependencies
+      # Step 5: Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 5: Run the scraper and send emails
+      # Step 6: Run the scraper and send emails
       - name: Run IPO Notifier
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           RECIPIENTS: ${{ secrets.RECIPIENTS }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SERVER: smtp.gmail.com  # Hardcoded for simplicity
+          SMTP_PORT: 587  # Hardcoded for simplicity
         run: |
           python script.py
 
-      # Step 6: Create an empty file if no artifact was downloaded (first-time run)
+      # Step 7: Create an empty file if no artifact was downloaded (first-time run)
       - name: Ensure notified_ipos.txt exists
         run: |
           if [ ! -f notified_ipos.txt ]; then
@@ -52,7 +64,13 @@ jobs:
             touch notified_ipos.txt
           fi
 
-      # Step 7: Upload the updated artifact (notified_ipos.txt)
+      # Step 8: Debug artifact before upload (optional but recommended)
+      - name: Debug artifact before upload
+        run: |
+          echo "Contents of notified_ipos.txt before upload:"
+          cat notified_ipos.txt
+
+      # Step 9: Upload the updated artifact (notified_ipos.txt)
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:

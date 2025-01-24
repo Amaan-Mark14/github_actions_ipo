@@ -13,6 +13,10 @@ GMAIL_PASSWORD = os.getenv("GMAIL_PASSWORD")
 recipients = os.getenv("RECIPIENTS", "")
 RECIPIENTS = [email.strip() for email in recipients.split(",") if email.strip()]
 
+def debug_print(message):
+    """Helper function for debug output"""
+    print(f"[DEBUG] {message}")
+
 def validate_config():
     """Validate required configuration"""
     errors = []
