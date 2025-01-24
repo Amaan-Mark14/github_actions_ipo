@@ -139,47 +139,146 @@ def notify_new_ipos(ipo_list):
 
     # Build the HTML email body
     debug_print("Building email content...")
-    body = """
+    body = f"""
     <html>
     <head>
         <style>
-            /* Your existing styles */
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #f7fafc;
+                color: #2d3748;
+                margin: 0;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 800px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }}
+            .header {{
+                background-color: #4299e1;
+                color: white;
+                padding: 20px;
+                text-align: center;
+            }}
+            .header h1 {{
+                margin: 0;
+                font-size: 24px;
+            }}
+            .content {{
+                padding: 20px;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }}
+            th, td {{
+                padding: 12px;
+                text-align: left;
+                border-bottom: 1px solid #e2e8f0;
+            }}
+            th {{
+                background-color: #edf2f7;
+                font-weight: 600;
+                text-transform: uppercase;
+                font-size: 12px;
+                letter-spacing: 0.05em;
+            }}
+            tr:hover {{
+                background-color: #f7fafc;
+            }}
+            .status {{
+                display: inline-block;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 500;
+            }}
+            .status.open {{
+                background-color: #48bb78;
+                color: white;
+            }}
+            .status.closed {{
+                background-color: #f56565;
+                color: white;
+            }}
+            .footer {{
+                text-align: center;
+                padding: 20px;
+                background-color: #edf2f7;
+                font-size: 14px;
+                color: #4a5568;
+            }}
+            .footer a {{
+                color: #4299e1;
+                text-decoration: none;
+            }}
+            .footer a:hover {{
+                text-decoration: underline;
+            }}
+            .cta-buttons {{
+                text-align: center;
+                margin: 20px 0;
+            }}
+            .cta-buttons a {{
+                display: inline-block;
+                padding: 10px 20px;
+                margin: 0 10px;
+                background-color: #4299e1;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                font-weight: 500;
+            }}
+            .cta-buttons a:hover {{
+                background-color: #3182ce;
+            }}
         </style>
     </head>
     <body>
-        <h2>Apply for the following IPOs:</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Est Listing Gain</th>
-                    <th>Open Date</th>
-                    <th>Close Date</th>
-                    <th>Size</th>
-                </tr>
-            </thead>
-            <tbody>
+        <div class="container">
+            <div class="header">
+                <h1>🚀 New IPO Opportunities</h1>
+            </div>
+            <div class="content">
+                <p>Here are the latest IPO opportunities that match your criteria:</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Est. Listing Gain</th>
+                            <th>Open Date</th>
+                            <th>Close Date</th>
+                            <th>Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>
     """
+
     for ipo in new_ipos:
+        status_class = "open" if "Open" in ipo['Status'] else "closed"
         body += f"""
-            <tr>
-                <td>{ipo['Name']}</td>
-                <td>{ipo['Status']}</td>
-                <td>{ipo['Est Listing']}</td>
-                <td>{ipo['Open Date']}</td>
-                <td>{ipo['Close Date']}</td>
-                <td>{ipo['Size']}</td>
-            </tr>
+                        <tr>
+                            <td>{ipo['Name']}</td>
+                            <td><span class="status {status_class}">{ipo['Status']}</span></td>
+                            <td>{ipo['Est Listing']}</td>
+                            <td>{ipo['Open Date']}</td>
+                            <td>{ipo['Close Date']}</td>
+                            <td>{ipo['Size']}</td>
+                        </tr>
         """
+
     body += """
-            </tbody>
-        </table>
-        <p>
-            <a href="https://groww.in/ipo" class="button" target="_blank">Apply on Groww</a>
-            <a href="https://dhan.co/ipo" class="button" target="_blank">Apply on Dhan</a>
-        </p>
-        <p>Happy Investing!</p>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </body>
     </html>
     """
