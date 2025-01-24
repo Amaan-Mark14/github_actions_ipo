@@ -3,15 +3,34 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")  # Default to Gmail
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))  # Default to 587
+# Environment variables with defaults
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 GMAIL_USER = os.getenv("GMAIL_USER")
 GMAIL_PASSWORD = os.getenv("GMAIL_PASSWORD")
-RECIPIENTS = os.getenv("RECIPIENTS").split(",")
+
+# Handle RECIPIENTS with validation
+recipients = os.getenv("RECIPIENTS", "")
+RECIPIENTS = [email.strip() for email in recipients.split(",") if email.strip()]
+
+def validate_config():
+    """Validate required configuration"""
+    errors = []
+    if not GMAIL_USER:
+        errors.append("GMAIL_USER is not set")
+    if not GMAIL_PASSWORD:
+        errors.append("GMAIL_PASSWORD is not set")
+    if not RECIPIENTS:
+        errors.append("RECIPIENTS is not set or invalid")
+    
+    if errors:
+        raise EnvironmentError("Email configuration error: " + ", ".join(errors))
 
 def send_email(subject, body, html=False):
     try:
-        # Create the email
+        # Validate configuration before proceeding
+        validate_config()
+
         msg = MIMEMultipart()
         msg["From"] = GMAIL_USER
         msg["To"] = ", ".join(RECIPIENTS)
