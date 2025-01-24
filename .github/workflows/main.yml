@@ -1,0 +1,51 @@
+name: IPO Notifier
+
+on:
+  schedule:
+    - cron: "0 9 * * *"  # Runs daily at 9 AM UTC
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  notify_ipos:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Check out the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Step 2: Download the artifact (notified_ipos.txt)
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: notified_ipos
+        path: ./  # Save the artifact in the working directory
+      continue-on-error: true  # Ignore if the artifact doesn’t exist (e.g., first run)
+
+    # Step 3: Set up Python
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+
+    # Step 4: Install dependencies
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    # Step 5: Run the scraper and send emails
+    - name: Run IPO Notifier
+      env:
+        GMAIL_USER: ${{ secrets.GMAIL_USER }}
+        GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+        RECIPIENTS: ${{ secrets.RECIPIENTS }}
+      run: |
+        python script.py
+
+    # Step 6: Upload the updated artifact
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: notified_ipos
+        path: notified_ipos.txt
