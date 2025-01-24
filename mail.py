@@ -33,24 +33,25 @@ def send_email(subject, body, html=False):
 
         msg = MIMEMultipart()
         msg["From"] = GMAIL_USER
-        msg["To"] = ", ".join(RECIPIENTS)
+        msg["To"] = GMAIL_USER  # Send to yourself (or a dummy address)
         msg["Subject"] = subject
 
-        # Email body
+        # Add BCC recipients
+        msg["Bcc"] = ", ".join(RECIPIENTS)
+
         if html:
             msg.attach(MIMEText(body, "html"))
         else:
             msg.attach(MIMEText(body, "plain"))
 
-        # Connect to Gmail SMTP server
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
             server.login(GMAIL_USER, GMAIL_PASSWORD)
-            server.sendmail(GMAIL_USER, RECIPIENTS, msg.as_string())
+            server.sendmail(GMAIL_USER, [GMAIL_USER] + RECIPIENTS, msg.as_string())
 
-        print("Email sent successfully!")
+        debug_print("Email sent successfully with BCC!")
         return True
 
     except Exception as e:
-        print(f"Error sending email: {e}")
+        debug_print(f"Error sending email: {e}")
         return False
