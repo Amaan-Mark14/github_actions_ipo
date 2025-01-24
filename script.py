@@ -7,181 +7,62 @@ from bs4 import BeautifulSoup
 import os
 from mail import send_email
 
-# File to track notified IPOs
 ARTIFACT_FILE = "notified_ipos.txt"
 
 def load_notified_ipos():
     """Load previously notified IPOs from the artifact file."""
-    if os.path.exists(ARTIFACT_FILE):
-        with open(ARTIFACT_FILE, "r") as file:
-            return set(line.strip() for line in file.readlines())
-    return set()
+    try:
+        if os.path.exists(ARTIFACT_FILE):
+            with open(ARTIFACT_FILE, "r") as file:
+                return set(line.strip() for line in file.readlines())
+        return set()
+    except Exception as e:
+        print(f"Error loading notified IPOs: {e}")
+        return set()
 
 def save_notified_ipos(notified_ipos):
     """Save notified IPOs to the artifact file."""
-    with open(ARTIFACT_FILE, "w") as file:
-        for ipo in notified_ipos:
-            file.write(f"{ipo}\n")
-
-def scrape_ipo_table():
-    """Scrape the IPO table and extract qualified IPOs."""
     try:
-        # Step 1: Set up WebDriver with headless mode
-        options = Options()
-        options.add_argument("--headless")
-        driver = webdriver.Firefox(options=options)
-
-        # Step 2: Fetch the website's HTML content
-        url = "https://www.investorgain.com/report/live-ipo-gmp/331/"
-        driver.get(url)
-
-        # Step 3: Wait for the table to load
-        WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.ID, "report_table"))
-        )
-
-        # Step 4: Parse the page with BeautifulSoup
-        soup = BeautifulSoup(driver.page_source, "html.parser")
-        driver.quit()
-
-        # Step 5: Locate the main table
-        table = soup.find("table", {"id": "report_table"})
-        if not table:
-            return "Error: Unable to locate the table on the page."
-
-        # Step 6: Parse rows in the table
-        rows = table.find_all("tr")
-        ipo_list = []  # To store qualified IPOs
-
-        for row in rows[1:]:  # Skip header row
-            status_cell = row.find("td", {"data-label": "Status"})
-            rating_cell = row.find("td", {"data-label": "Fire Rating"})
-            name_cell = row.find("td", {"data-label": "IPO"})
-            est_listing_cell = row.find("td", {"data-label": "Est Listing"})
-            open_date_cell = row.find("td", {"data-label": "Open"})
-            close_date_cell = row.find("td", {"data-label": "Close"})
-
-            if not (status_cell and rating_cell and name_cell and est_listing_cell and open_date_cell and close_date_cell):
-                continue
-
-            status_text = status_cell.text.strip()
-            if "Upcoming" in status_text:
-                continue
-            elif "Open" not in status_text:
-                break
-
-            rating_title = rating_cell.find("img")["title"]
-            if "Rating 4/5" in rating_title or "Rating 5/5" in rating_title:
-                ipo_name = name_cell.text.strip()
-                est_listing_text = est_listing_cell.text.strip()
-                open_date = open_date_cell.text.strip()
-                close_date = close_date_cell.text.strip()
-                est_listing_percent = est_listing_text.split("(")[-1].replace(")", "").strip()
-                size = "Small" if ipo_name.endswith("IPO") else "Big" if "SME" in ipo_name else "Unknown"
-
-                ipo_details = {
-                    "Name": ipo_name,
-                    "Status": status_text,
-                    "Est Listing": est_listing_percent,
-                    "Open Date": open_date,
-                    "Close Date": close_date,
-                    "Size": size,
-                }
-                ipo_list.append(ipo_details)
-
-        return ipo_list
-
+        with open(ARTIFACT_FILE, "w") as file:
+            for ipo in notified_ipos:
+                file.write(f"{ipo}\n")
     except Exception as e:
-        return f"Error: {e}"
+        print(f"Error saving notified IPOs: {e}")
 
-def notify_new_ipos(ipo_list):
-    """Filter and notify about new IPOs."""
-    if not ipo_list:
-        print("No new IPOs to notify.")
-        return
-
-    notified_ipos = load_notified_ipos()
-    new_ipos = [ipo for ipo in ipo_list if ipo["Name"] not in notified_ipos]
-
-    if not new_ipos:
-        print("No new IPOs to notify.")
-        return
-
-    # Build the HTML email body
-    body = """
+def create_email_body(new_ipos, past_ipos):
+    """Create HTML email content with new IPOs and historical data"""
+    past_to_show = list(past_ipos)[-5:]  # Show last 5 notified
+    
+    return f"""
     <html>
     <head>
         <style>
-            body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-            }
-            h2 {
-                color: #007BFF;
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 20px 0;
-                font-size: 14px;
-            }
-            th, td {
-                border: 1px solid #ddd;
-                padding: 8px;
-                text-align: left;
-            }
-            th {
-                background-color: #f4f4f4;
-                color: #333;
-            }
-            tr:nth-child(even) {
-                background-color: #f9f9f9;
-            }
-            .button {
-                display: inline-block;
-                padding: 10px 15px;
-                margin: 10px 5px 0;
-                font-size: 14px;
-                color: white;
-                background-color: #007BFF;
-                text-decoration: none;
-                border-radius: 4px;
-            }
-            .button:hover {
-                background-color: #0056b3;
-            }
+            /* Keep your existing styles */
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            h2 {{ color: #007BFF; }}
+            table {{ width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }}
+            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            th {{ background-color: #f4f4f4; color: #333; }}
+            tr:nth-child(even) {{ background-color: #f9f9f9; }}
+            .button {{ display: inline-block; padding: 10px 15px; margin: 10px 5px 0; 
+                     font-size: 14px; color: white; background-color: #007BFF; 
+                     text-decoration: none; border-radius: 4px; }}
+            .button:hover {{ background-color: #0056b3; }}
+            .history {{ margin-top: 30px; color: #666; }}
         </style>
     </head>
     <body>
-        <h2>Apply for the following IPOs:</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Est Listing Gain</th>
-                    <th>Open Date</th>
-                    <th>Close Date</th>
-                    <th>Size</th>
-                </tr>
-            </thead>
-            <tbody>
-    """
-    for ipo in new_ipos:
-        body += f"""
-            <tr>
-                <td>{ipo['Name']}</td>
-                <td>{ipo['Status']}</td>
-                <td>{ipo['Est Listing']}</td>
-                <td>{ipo['Open Date']}</td>
-                <td>{ipo['Close Date']}</td>
-                <td>{ipo['Size']}</td>
-            </tr>
-        """
-    body += """
-            </tbody>
-        </table>
+        {"<h2>🚨 New Qualified IPOs Found!</h2>" if new_ipos else "<h2>✅ No New IPOs Today</h2>"}
+        
+        {render_ipo_table(new_ipos) if new_ipos else "<p>No new IPOs meeting criteria found today.</p>"}
+        
+        <div class="history">
+            <h3>Recently Notified IPOs (last 5):</h3>
+            <ul>
+                {''.join([f'<li>{ipo}</li>' for ipo in past_to_show]) if past_to_show else '<li>No historical data</li>'}
+            </ul>
+        </div>
+        
         <p>
             <a href="https://groww.in/ipo" class="button" target="_blank">Apply on Groww</a>
             <a href="https://dhan.co/ipo" class="button" target="_blank">Apply on Dhan</a>
@@ -191,18 +72,59 @@ def notify_new_ipos(ipo_list):
     </html>
     """
 
-    # Send email notification
-    send_email("New Qualified IPOs", body, html=True)
+def render_ipo_table(ipos):
+    """Generate HTML table for IPOs"""
+    table_rows = []
+    for ipo in ipos:
+        table_rows.append(f"""
+            <tr>
+                <td>{ipo['Name']}</td>
+                <td>{ipo['Status']}</td>
+                <td>{ipo['Est Listing']}</td>
+                <td>{ipo['Open Date']}</td>
+                <td>{ipo['Close Date']}</td>
+                <td>{ipo['Size']}</td>
+            </tr>
+        """)
+    
+    return f"""
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Est Listing Gain</th>
+                <th>Open Date</th>
+                <th>Close Date</th>
+                <th>Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            {''.join(table_rows)}
+        </tbody>
+    </table>
+    """
 
-    # Update the notified IPOs
-    notified_ipos.update(ipo["Name"] for ipo in new_ipos)
-    save_notified_ipos(notified_ipos)
-
-
-if __name__ == "__main__":
-    print("Scraping IPO table...")
-    ipo_result = scrape_ipo_table()
-    if isinstance(ipo_result, str):  # Error message
-        print(ipo_result)
+def notify_new_ipos(ipo_list):
+    """Handle notification logic with history tracking"""
+    notified_ipos = load_notified_ipos()
+    past_ipos = list(notified_ipos)  # Copy for history display
+    
+    if not ipo_list:
+        subject = "No New Qualified IPOs Today"
+        new_ipos = []
     else:
-        notify_new_ipos(ipo_result)
+        new_ipos = [ipo for ipo in ipo_list if ipo["Name"] not in notified_ipos]
+        subject = f"🚨 {len(new_ipos)} New Qualified IPOs Found!" if new_ipos else "✅ No New IPOs Today"
+    
+    # Build email body with history
+    body = create_email_body(new_ipos, past_ipos)
+    
+    # Send email only if there are new IPOs or it's the first run
+    if new_ipos or not past_ipos:
+        if send_email(subject, body, html=True):
+            # Update notified IPOs only if email sent successfully
+            notified_ipos.update(ipo["Name"] for ipo in new_ipos)
+            save_notified_ipos(notified_ipos)
+
+# Keep your existing scrape_ipo_table() and __main__ logic
