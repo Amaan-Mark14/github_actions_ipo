@@ -39,23 +39,23 @@ def send_email(subject, body, html=False):
         msg["From"] = GMAIL_USER
         msg["To"] = GMAIL_USER  # Send to yourself (or a dummy address)
         msg["Subject"] = subject
+        msg["Bcc"] = ", ".join(RECIPIENTS)  # Add BCC recipients
 
-        # Add BCC recipients
-        msg["Bcc"] = ", ".join(RECIPIENTS)
-
+        # Set the email body
         if html:
             msg.attach(MIMEText(body, "html"))
         else:
             msg.attach(MIMEText(body, "plain"))
 
+        # Send the email
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
             server.login(GMAIL_USER, GMAIL_PASSWORD)
             server.sendmail(GMAIL_USER, [GMAIL_USER] + RECIPIENTS, msg.as_string())
 
-        debug_print("Email sent successfully with BCC!")
+        print("Email sent successfully with BCC!")
         return True
 
     except Exception as e:
-        debug_print(f"Error sending email: {e}")
+        print(f"Error sending email: {e}")
         return False
