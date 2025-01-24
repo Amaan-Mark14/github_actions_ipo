@@ -1,0 +1,13 @@
+# Environment variables
+.env
+
+# Artifacts
+notified_ipos.txt
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Other system files
+.DS_Store
+.conda
