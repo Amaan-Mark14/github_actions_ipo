@@ -3,6 +3,7 @@
 
 # Artifacts
 notified_ipos.txt
+tempyml.yml
 
 # Python cache files
 __pycache__/
