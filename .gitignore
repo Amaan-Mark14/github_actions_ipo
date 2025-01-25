@@ -1,9 +1,6 @@
 # Environment variables
 .env
 
-# Artifacts
-tempyml.yml
-
 # Python cache files
 __pycache__/
 *.pyc
