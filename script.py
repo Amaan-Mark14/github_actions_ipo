@@ -100,7 +100,9 @@ def notify_new_ipos(artifact, ipos):
         if ipo["Name"] not in artifact["sent"]:
             new_ipos.append(ipo)
             artifact["sent"].append(ipo["Name"])
-    return new_ipos, artifact["sent"][-5:]
+    # Return the last 5 IPOs with full details
+    old_ipos = [ipo for ipo in ipos if ipo["Name"] in artifact["sent"]][-5:]
+    return new_ipos, old_ipos
 
 # Send email
 def send_email(new_ipos, old_ipos, sender, recipients, smtp_server, smtp_port, smtp_user, smtp_password):
@@ -188,9 +190,9 @@ if __name__ == "__main__":
             new_ipos=new_ipos,
             old_ipos=old_ipos,
             sender="your-email@example.com",
-            recipients=["recipient@example.com"],
+            recipients=os.getenv("RECIPIENTS", "").split(","),
             smtp_server="smtp.gmail.com",
             smtp_port=587,
-            smtp_user="your-email@example.com",
-            smtp_password="your-email-password",
+            smtp_user=os.getenv("SMTP_USER"),
+            smtp_password=os.getenv("SMTP_PASSWORD"),
         )
