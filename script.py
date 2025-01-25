@@ -22,7 +22,9 @@ def load_artifact(artifact_file="notified_ipos.txt"):
         debug_print("Artifact file not found, creating a new one.")
         return {"sent": []}
     with open(artifact_file, "r") as f:
-        return json.load(f)
+        data = json.load(f)
+        debug_print(f"Artifact contains: {data['sent']}")
+        return data
 
 # Save artifact
 def save_artifact(data, artifact_file="notified_ipos.txt"):
@@ -86,7 +88,8 @@ def scrape_ipo_table():
                 }
                 ipo_list.append(ipo_details)
 
-        debug_print(f"Found {len(ipo_list)} qualified IPOs")
+        ipo_names = [ipo["Name"] for ipo in ipo_list]
+        debug_print(f"Found IPOs: {ipo_names}")
         return ipo_list
 
     except Exception as e:
@@ -100,8 +103,9 @@ def notify_new_ipos(artifact, ipos):
         if ipo["Name"] not in artifact["sent"]:
             new_ipos.append(ipo)
             artifact["sent"].append(ipo["Name"])
-    # Return the last 5 IPOs with full details
     old_ipos = [ipo for ipo in ipos if ipo["Name"] in artifact["sent"]][-5:]
+    debug_print(f"New IPOs: {[ipo['Name'] for ipo in new_ipos]}")
+    debug_print(f"Old IPOs: {[ipo['Name'] for ipo in old_ipos]}")
     return new_ipos, old_ipos
 
 # Send email
