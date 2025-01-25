@@ -7,6 +7,7 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -31,7 +32,18 @@ jobs:
     - name: Install ChromeDriver
       run: |
         CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
-        CHROMEDRIVER_VERSION=$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%.*})
+        echo "Installed Chrome version: $CHROME_VERSION"
+
+        CHROME_MAJOR_VERSION=${CHROME_VERSION%%.*}
+        CHROMEDRIVER_VERSION=$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_MAJOR_VERSION)
+
+        if [ -z "$CHROMEDRIVER_VERSION" ]; then
+          echo "Error: Could not fetch matching ChromeDriver version for Chrome $CHROME_MAJOR_VERSION"
+          exit 1
+        fi
+
+        echo "Matching ChromeDriver version: $CHROMEDRIVER_VERSION"
+
         wget -N https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
         sudo unzip -o chromedriver_linux64.zip -d /usr/local/bin/
         sudo chmod +x /usr/local/bin/chromedriver
@@ -41,6 +53,13 @@ jobs:
       run: |
         google-chrome --version
         chromedriver --version
+
+    - name: Download previous artifact
+      uses: actions/download-artifact@v3
+      continue-on-error: true
+      with:
+        name: notified-ipos
+        path: .
 
     - name: Run IPO Notifier
       env:
@@ -57,10 +76,3 @@ jobs:
         name: notified-ipos
         path: notified_ipos.txt
         retention-days: 7
-
-    - name: Download previous artifact
-      uses: actions/download-artifact@v3
-      continue-on-error: true
-      with:
-        name: notified-ipos
-        path: .
