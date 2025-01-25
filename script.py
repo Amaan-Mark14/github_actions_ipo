@@ -23,6 +23,9 @@ def load_artifact():
     debug_print("Loading artifact file...")
     notified_ipos = []
     try:
+        if not os.path.exists(ARTIFACT_FILE):
+            with open(ARTIFACT_FILE, 'w') as f:
+                pass  
         if os.path.exists(ARTIFACT_FILE):
             with open(ARTIFACT_FILE, 'r') as f:
                 notified_ipos = [line.strip() for line in f.readlines()]
@@ -60,7 +63,9 @@ def scrape_ipo_table():
         debug_print("Initializing WebDriver...")
         options = Options()
         options.add_argument("--headless")
+        options.page_load_strategy = 'eager'  
         driver = webdriver.Firefox(options=options)
+        driver.set_page_load_timeout(60)  
 
         # Fetch content
         debug_print("Fetching website content...")
@@ -69,7 +74,7 @@ def scrape_ipo_table():
 
         # Wait for table
         debug_print("Waiting for table to load...")
-        WebDriverWait(driver, 30).until(
+        WebDriverWait(driver, 60).until(
             EC.presence_of_element_located((By.ID, "report_table"))
         )
 
