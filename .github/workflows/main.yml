@@ -20,11 +20,12 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential libxml2-dev libxslt-dev libssl-dev zlib1g-dev gcc
+        sudo apt-get install -y libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2
 
-    - name: Install Firefox ESR
+    - name: Install latest Firefox
       run: |
-        sudo apt-get remove -y firefox
-        sudo apt-get install -y firefox-esr
+        sudo apt-get install -y firefox
+        firefox --version
 
     - name: Install Python dependencies
       run: |
