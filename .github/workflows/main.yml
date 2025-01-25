@@ -1,78 +1,73 @@
-name: Daily IPO Notifier
+name: IPO Notifier
+
 on:
   schedule:
-    - cron: '30 8 * * 1-5'  # 1:30 PM IST (8:00 AM UTC) Mon-Fri
+    - cron: "30 8 * * 1-5"  # 1:30 PM IST (8:00 AM UTC) Mon-Fri
   workflow_dispatch:
 
 jobs:
-  notify:
+  notify_ipos:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: notified_ipos
+          path: ./
+        continue-on-error: true
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install selenium beautifulsoup4 python-dotenv
+      - name: Debug artifact
+        run: |
+          if [ -f notified_ipos.txt ]; then
+            echo "Artifact contents:"
+            cat notified_ipos.txt
+          else
+            echo "No artifact found"
+          fi
 
-    - name: Install Chrome
-      run: |
-        sudo apt-get update
-        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-        sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
-        sudo rm google-chrome-stable_current_amd64.deb
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
 
-    - name: Install ChromeDriver
-      run: |
-        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
-        echo "Installed Chrome version: $CHROME_VERSION"
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y firefox
 
-        CHROME_MAJOR_VERSION=${CHROME_VERSION%%.*}
-        CHROMEDRIVER_VERSION=$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_MAJOR_VERSION)
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install selenium beautifulsoup4 python-dotenv
 
-        if [ -z "$CHROMEDRIVER_VERSION" ]; then
-          echo "Error: Could not fetch matching ChromeDriver version for Chrome $CHROME_MAJOR_VERSION"
-          exit 1
-        fi
+      - name: Install GeckoDriver
+        run: |
+          GECKODRIVER_VERSION=v0.35.0
+          wget https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_VERSION/geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz
+          tar -xzf geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz
+          chmod +x geckodriver
+          sudo mv geckodriver /usr/local/bin/
 
-        echo "Matching ChromeDriver version: $CHROMEDRIVER_VERSION"
+      - name: Run IPO Notifier
+        env:
+          SMTP_USER: ${{ secrets.GMAIL_USER }}
+          SMTP_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          RECIPIENTS: ${{ secrets.RECIPIENTS }}
+        run: |
+          python script.py
 
-        wget -N https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
-        sudo unzip -o chromedriver_linux64.zip -d /usr/local/bin/
-        sudo chmod +x /usr/local/bin/chromedriver
-        rm chromedriver_linux64.zip
+      - name: Ensure artifact exists
+        run: |
+          if [ ! -f notified_ipos.txt ]; then
+            touch notified_ipos.txt
+          fi
 
-    - name: Verify installations
-      run: |
-        google-chrome --version
-        chromedriver --version
-
-    - name: Download previous artifact
-      uses: actions/download-artifact@v3
-      continue-on-error: true
-      with:
-        name: notified-ipos
-        path: .
-
-    - name: Run IPO Notifier
-      env:
-        SMTP_USER: ${{ secrets.SMTP_USER }}
-        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-        RECIPIENTS: ${{ secrets.RECIPIENTS }}
-      run: |
-        python script.py
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v3
-      continue-on-error: true
-      with:
-        name: notified-ipos
-        path: notified_ipos.txt
-        retention-days: 7
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notified_ipos
+          path: notified_ipos.txt
