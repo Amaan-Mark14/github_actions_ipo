@@ -94,8 +94,8 @@ def send_email(ipo_data):
                     </div>
                     
                     <div style="flex: 1; margin-left: 20px;">
-                        <div style="margin-bottom: 8px;">
-                            <span style="background-color: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 6px; font-size: 14px; font-weight: 500;">{ipo[1]}</span>
+                        <div style="margin-bottom: 16px;"> <!-- Increased margin for more space -->
+                            <span style="background-color: #e8f5e9; color: #2e7d32; padding: 10px 12px; border-radius: 6px; font-size: 14px; font-weight: 500; display: inline-block; line-height: 1.5;">{ipo[1]}</span>
                         </div>
                         <div style="margin-top: 16px;">
                             <div style="color: #666; font-size: 13px; margin-bottom: 4px;">Open Date</div>
