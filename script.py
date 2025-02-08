@@ -1,38 +1,91 @@
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
+from tabulate import tabulate
+import re
 import os
-import json
-from datetime import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from dateutil import parser
 
-# Debug print function
 def debug_print(message):
     print(f"[DEBUG {datetime.now()}] {message}")
 
-# Load artifact
-def load_artifact(artifact_file="notified_ipos.txt"):
-    debug_print(f"Loading artifact from {artifact_file}...")
-    if not os.path.exists(artifact_file):
-        debug_print("Artifact file not found, creating a new one.")
-        return {"sent": []}
-    with open(artifact_file, "r") as f:
-        data = json.load(f)
-        debug_print(f"Artifact contains: {data['sent']}")
-        return data
+def extract_listing_number(text):
+    match = re.search(r'\((-?\d+(\.\d+)?)%\)', text)
+    return match.group(1) + ' %' if match else text
 
-# Save artifact
-def save_artifact(data, artifact_file="notified_ipos.txt"):
-    debug_print(f"Saving artifact to {artifact_file}...")
-    with open(artifact_file, "w") as f:
-        json.dump(data, f)
+def convert_rating_to_fraction(text):
+    fire_count = text.count("🔥")
+    if fire_count > 0:
+        return f"{fire_count}.0/5"
+    return "No Rating"
 
-# Scrape IPO table
+def is_within_three_days(close_date_str):
+    try:
+        close_date = parser.parse(close_date_str).date()
+        today = datetime.now().date()
+        return close_date >= today and (close_date - today).days <= 3
+    except:
+        return False
+
+def is_high_rating(rating):
+    return rating in ["4.0/5", "5.0/5"]
+
+def send_email(ipo_data):
+    sender_email = os.environ.get('GMAIL_USER')
+    password = os.environ.get('GMAIL_APP_PASSWORD')
+    recipient_emails = os.environ.get('RECIPIENT_EMAILS').split(',')
+
+    if not all([sender_email, password, recipient_emails]):
+        debug_print("Missing email configuration")
+        return
+
+    # Create base message
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['Subject'] = f"IPO Alerts - {datetime.now().strftime('%Y-%m-%d')}"
+    # Don't set To field in headers - we'll use BCC instead
+
+    if not ipo_data:
+        body = "No qualifying IPOs found for the next 3 days."
+    else:
+        headers = ["Name", "Status", "Est Listing", "Open Date", "Close Date", "Rating"]
+        table = tabulate(ipo_data, headers=headers, tablefmt="html")
+        body = f"""
+        <html>
+            <body>
+                <h2>IPO Alerts - Upcoming Offerings</h2>
+                <p>Here are the highly-rated IPOs closing in the next 3 days:</p>
+                {table}
+                <p>Note: Only showing IPOs with ratings of 4/5 or 5/5</p>
+            </body>
+        </html>
+        """
+
+    msg.attach(MIMEText(body, 'html'))
+
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(sender_email, password)
+            # Send individual emails with BCC
+            for recipient in recipient_emails:
+                msg_copy = MIMEMultipart()
+                msg_copy['From'] = sender_email
+                msg_copy['To'] = sender_email  # Set To as sender
+                msg_copy['Subject'] = msg['Subject']
+                msg_copy['Bcc'] = recipient
+                msg_copy.attach(MIMEText(body, 'html'))
+                server.send_message(msg_copy)
+                debug_print(f"Email sent to BCC recipient")
+        debug_print("All emails sent successfully!")
+    except Exception as e:
+        debug_print(f"Failed to send email: {e}")
+
 def scrape_ipo_table():
     debug_print("Starting IPO table scraping...")
     try:
@@ -40,163 +93,50 @@ def scrape_ipo_table():
         options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-
-        driver = webdriver.Chrome(options=options)
-        debug_print("Fetching website content...")
+        options.add_argument("--disable-gpu")
+        
         url = "https://www.investorgain.com/report/live-ipo-gmp/331/"
+        driver = webdriver.Chrome(options=options)
         driver.get(url)
 
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.ID, "report_table"))
         )
+        debug_print("Table found!")
 
-        debug_print("Parsing page content...")
-        soup = BeautifulSoup(driver.page_source, "html.parser")
-        driver.quit()
-
-        table = soup.find("table", {"id": "report_table"})
-        if not table:
-            debug_print("Error: Unable to locate the table on the page.")
-            return []
-
-        debug_print("Parsing table rows...")
-        rows = table.find_all("tr")
+        table_element = driver.find_element(By.ID, "report_table")
+        rows = table_element.find_elements(By.TAG_NAME, "tr")
         ipo_list = []
 
         for row in rows[1:]:
-            status_cell = row.find("td", {"data-label": "Status"})
-            rating_cell = row.find("td", {"data-label": "Fire Rating"})
-            name_cell = row.find("td", {"data-label": "IPO"})
-            est_listing_cell = row.find("td", {"data-label": "Est Listing"})
-            open_date_cell = row.find("td", {"data-label": "Open"})
-            close_date_cell = row.find("td", {"data-label": "Close"})
-
-            if not (status_cell and rating_cell and name_cell and est_listing_cell and open_date_cell and close_date_cell):
+            cells = row.find_elements(By.TAG_NAME, "td")
+            if len(cells) < 6:
                 continue
 
-            if "Open" not in status_cell.text.strip():
-                continue
+            try:
+                name = cells[0].text.strip()
+                status = cells[1].text.strip()
+                est_listing = extract_listing_number(cells[4].text.strip())
+                open_date = cells[8].text.strip()
+                close_date = cells[9].text.strip()
+                rating = convert_rating_to_fraction(cells[5].text.strip())
 
-            rating_title = rating_cell.find("img")["title"]
-            if "Rating 4/5" in rating_title or "Rating 5/5" in rating_title:
-                ipo_details = {
-                    "Name": name_cell.text.strip(),
-                    "Status": status_cell.text.strip(),
-                    "Est Listing": est_listing_cell.text.strip(),
-                    "Open Date": open_date_cell.text.strip(),
-                    "Close Date": close_date_cell.text.strip(),
-                }
-                ipo_list.append(ipo_details)
+                # Filter based on close date and rating
+                if is_within_three_days(close_date) and is_high_rating(rating):
+                    ipo_list.append([name, status, est_listing, open_date, close_date, rating])
+                    debug_print(f"Added qualifying IPO: {name}")
 
-        ipo_names = [ipo["Name"] for ipo in ipo_list]
-        debug_print(f"Found IPOs: {ipo_names}")
+            except Exception as e:
+                debug_print(f"Skipping row due to error: {e}")
+
         return ipo_list
 
     except Exception as e:
         debug_print(f"Error occurred during IPO scraping: {e}")
         return []
+    finally:
+        driver.quit()
 
-# Notify new IPOs
-def notify_new_ipos(artifact, ipos):
-    new_ipos = []
-    for ipo in ipos:
-        if ipo["Name"] not in artifact["sent"]:
-            new_ipos.append(ipo)
-            artifact["sent"].append(ipo["Name"])
-    old_ipos = [ipo for ipo in ipos if ipo["Name"] in artifact["sent"]][-5:]
-    debug_print(f"New IPOs: {[ipo['Name'] for ipo in new_ipos]}")
-    debug_print(f"Old IPOs: {[ipo['Name'] for ipo in old_ipos]}")
-    return new_ipos, old_ipos
-
-# Send email
-def send_email(new_ipos, old_ipos, sender, recipients, smtp_server, smtp_port, smtp_user, smtp_password):
-    debug_print("Building email content...")
-
-    new_ipo_table = "".join(
-        f"""
-        <tr>
-            <td>{ipo['Name']}</td>
-            <td>{ipo['Status']}</td>
-            <td>{ipo['Est Listing']}</td>
-            <td>{ipo['Open Date']}</td>
-            <td>{ipo['Close Date']}</td>
-        </tr>
-        """
-        for ipo in new_ipos
-    )
-
-    old_ipo_table = "".join(
-        f"""
-        <tr>
-            <td>{ipo['Name']}</td>
-            <td>{ipo['Status']}</td>
-            <td>{ipo['Est Listing']}</td>
-            <td>{ipo['Open Date']}</td>
-            <td>{ipo['Close Date']}</td>
-        </tr>
-        """
-        for ipo in old_ipos
-    )
-
-    body = f"""
-    <html>
-    <body>
-        <h2>New IPO Opportunities</h2>
-        <table border="1">
-            <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Est. Listing Gain</th>
-                <th>Open Date</th>
-                <th>Close Date</th>
-            </tr>
-            {new_ipo_table}
-        </table>
-        <h2>Old IPO Opportunities</h2>
-        <table border="1">
-            <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Est. Listing Gain</th>
-                <th>Open Date</th>
-                <th>Close Date</th>
-            </tr>
-            {old_ipo_table}
-        </table>
-    </body>
-    </html>
-    """
-
-    try:
-        debug_print("Connecting to SMTP server...")
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_password)
-            for recipient in recipients:
-                msg = MIMEMultipart()
-                msg["From"] = sender
-                msg["To"] = recipient
-                msg["Subject"] = "🚀 IPO Opportunities"
-                msg.attach(MIMEText(body, "html"))
-                server.sendmail(sender, recipient, msg.as_string())
-        debug_print("Emails sent successfully.")
-    except Exception as e:
-        debug_print(f"Error sending email: {e}")
-
-# Main execution
 if __name__ == "__main__":
-    artifact = load_artifact()
     ipos = scrape_ipo_table()
-    new_ipos, old_ipos = notify_new_ipos(artifact, ipos)
-    save_artifact(artifact)
-    if new_ipos:
-        send_email(
-            new_ipos=new_ipos,
-            old_ipos=old_ipos,
-            sender="your-email@example.com",
-            recipients=os.getenv("RECIPIENTS", "").split(","),
-            smtp_server="smtp.gmail.com",
-            smtp_port=587,
-            smtp_user=os.getenv("SMTP_USER"),
-            smtp_password=os.getenv("SMTP_PASSWORD"),
-        )
+    send_email(ipos)

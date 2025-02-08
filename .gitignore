@@ -8,3 +8,6 @@ __pycache__/
 # Other system files
 .DS_Store
 .conda
+
+# Test files
+scrape.py
