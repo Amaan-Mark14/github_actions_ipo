@@ -8,8 +8,8 @@ on:
 env:
   GMAIL_USER: ${{ secrets.GMAIL_USER }}
   GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
-  RECIPIENT_EMAILS: ${{ secrets.RECIPIENTS }}
-
+  CONFIG_ENCRYPTION_KEY: ${{ secrets.CONFIG_ENCRYPTION_KEY }}
+  
 jobs:
   scrape-and-email:
     runs-on: ubuntu-latest
