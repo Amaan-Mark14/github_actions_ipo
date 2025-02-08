@@ -77,31 +77,34 @@ def send_email(ipo_data):
     if not ipo_data:
         body = "No qualifying IPOs found for the next 3 days."
     else:
-        # Create mobile-friendly cards instead of table rows
         ipo_cards = "".join(
             f"""
-            <div class="ipo-card" style="margin-bottom: 16px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; background-color: white;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h3 style="margin: 0; color: #1a237e; font-size: 16px;">{ipo[0]}</h3>
-                    <span style="background-color: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 14px;">{ipo[1]}</span>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
-                    <div>
-                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">Est. Listing Gains</div>
-                        <div style="color: {'#2e7d32' if float(ipo[2].replace(' %', '')) > 0 else '#c62828'}; font-weight: 600;">{ipo[2]}</div>
+            <div class="ipo-card" style="margin-bottom: 20px; border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: white;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 8px 0; color: #1a237e; font-size: 18px; font-weight: 600;">{ipo[0]}</h3>
+                        <div style="margin-bottom: 16px;">
+                            <div style="color: #666; font-size: 13px; margin-bottom: 4px;">Est. Listing Gains</div>
+                            <div style="color: {'#2e7d32' if float(ipo[2].replace(' %', '')) > 0 else '#c62828'}; font-size: 16px; font-weight: 600;">{ipo[2]}</div>
+                        </div>
+                        <div>
+                            <div style="color: #666; font-size: 13px; margin-bottom: 4px;">Rating</div>
+                            <div style="background-color: #fff3e0; color: #e65100; padding: 6px 12px; border-radius: 6px; display: inline-block; font-weight: 500;">{ipo[5]}</div>
+                        </div>
                     </div>
-                    <div>
-                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">Rating</div>
-                        <div style="background-color: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px; display: inline-block;">{ipo[5]}</div>
-                    </div>
-                    <div>
-                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">Open Date</div>
-                        <div>{ipo[3]}</div>
-                    </div>
-                    <div>
-                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">Close Date</div>
-                        <div style="font-weight: 600;">{ipo[4]}</div>
+                    
+                    <div style="flex: 1; margin-left: 20px;">
+                        <div style="margin-bottom: 8px;">
+                            <span style="background-color: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 6px; font-size: 14px; font-weight: 500;">{ipo[1]}</span>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <div style="color: #666; font-size: 13px; margin-bottom: 4px;">Open Date</div>
+                            <div style="color: #333; font-size: 15px; margin-bottom: 12px;">{ipo[3]}</div>
+                        </div>
+                        <div>
+                            <div style="color: #666; font-size: 13px; margin-bottom: 4px;">Close Date</div>
+                            <div style="color: #333; font-size: 15px; font-weight: 500;">{ipo[4]}</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -114,29 +117,36 @@ def send_email(ipo_data):
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
                 </style>
             </head>
-            <body style="font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 12px; background-color: #f5f5f5;">
-                <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px;">
-                    <h1 style="color: #1a237e; font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">
-                        🎯 IPO Alerts - Upcoming Offerings
-                    </h1>
+            <body style="font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 12px; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 24px;">
+                    <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #f0f0f0;">
+                        <h1 style="color: #1a237e; font-size: 24px; margin: 0; font-weight: 600;">
+                            🎯 IPO Alerts
+                        </h1>
+                        <p style="color: #666; font-size: 15px; margin: 8px 0 0 0;">
+                            {datetime.now().strftime('%d %B %Y')}
+                        </p>
+                    </div>
                     
-                    <p style="color: #424242; font-size: 16px; margin-bottom: 20px;">
+                    <p style="color: #424242; font-size: 16px; margin: 0 0 24px 0; line-height: 1.5;">
                         Here are the highly-rated IPOs closing in the next 3 days:
                     </p>
                     
-                    <div style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 24px;">
                         {ipo_cards}
                     </div>
                     
-                    <p style="color: #666; font-size: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-                        ℹ️ Note: Only showing IPOs with ratings of 4/5 or 5/5
-                    </p>
+                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 16px; margin-top: 24px;">
+                        <p style="color: #666; font-size: 14px; margin: 0;">
+                            ℹ️ Note: Only showing IPOs with ratings of 4/5 or 5/5
+                        </p>
+                    </div>
                     
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #666; font-size: 12px;">
-                        <p>To unsubscribe from these alerts, please contact the administrator.</p>
+                    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #f0f0f0; color: #666; font-size: 13px;">
+                        <p style="margin: 0;">To unsubscribe from these alerts, please contact the administrator.</p>
                     </div>
                 </div>
             </body>
