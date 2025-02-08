@@ -77,17 +77,34 @@ def send_email(ipo_data):
     if not ipo_data:
         body = "No qualifying IPOs found for the next 3 days."
     else:
-        # Create HTML table rows
-        table_rows = "".join(
+        # Create mobile-friendly cards instead of table rows
+        ipo_cards = "".join(
             f"""
-            <tr style="border-bottom: 1px solid #dddddd;">
-                <td style="padding: 12px; text-align: left;">{ipo[0]}</td>
-                <td style="padding: 12px; text-align: center;"><span style="background-color: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px;">{ipo[1]}</span></td>
-                <td style="padding: 12px; text-align: right;"><span style="color: {'#2e7d32' if float(ipo[2].replace(' %', '')) > 0 else '#c62828'}">{ipo[2]}</span></td>
-                <td style="padding: 12px; text-align: center;">{ipo[3]}</td>
-                <td style="padding: 12px; text-align: center;">{ipo[4]}</td>
-                <td style="padding: 12px; text-align: center;"><span style="background-color: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px;">{ipo[5]}</span></td>
-            </tr>
+            <div class="ipo-card" style="margin-bottom: 16px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; background-color: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="margin: 0; color: #1a237e; font-size: 16px;">{ipo[0]}</h3>
+                    <span style="background-color: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 14px;">{ipo[1]}</span>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">Est. Listing Gains</div>
+                        <div style="color: {'#2e7d32' if float(ipo[2].replace(' %', '')) > 0 else '#c62828'}; font-weight: 600;">{ipo[2]}</div>
+                    </div>
+                    <div>
+                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">Rating</div>
+                        <div style="background-color: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px; display: inline-block;">{ipo[5]}</div>
+                    </div>
+                    <div>
+                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">Open Date</div>
+                        <div>{ipo[3]}</div>
+                    </div>
+                    <div>
+                        <div style="color: #666; font-size: 12px; margin-bottom: 4px;">Close Date</div>
+                        <div style="font-weight: 600;">{ipo[4]}</div>
+                    </div>
+                </div>
+            </div>
             """
             for ipo in ipo_data
         )
@@ -95,12 +112,13 @@ def send_email(ipo_data):
         body = f"""
         <html>
             <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
                 </style>
             </head>
-            <body style="font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
-                <div style="max-width: 800px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px;">
+            <body style="font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 12px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px;">
                     <h1 style="color: #1a237e; font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">
                         🎯 IPO Alerts - Upcoming Offerings
                     </h1>
@@ -109,22 +127,8 @@ def send_email(ipo_data):
                         Here are the highly-rated IPOs closing in the next 3 days:
                     </p>
                     
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; background-color: white; border-radius: 8px;">
-                            <thead>
-                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dddddd;">
-                                    <th style="padding: 12px; text-align: left; color: #1a237e;">Company</th>
-                                    <th style="padding: 12px; text-align: center; color: #1a237e;">Status</th>
-                                    <th style="padding: 12px; text-align: right; color: #1a237e;">Est Listing</th>
-                                    <th style="padding: 12px; text-align: center; color: #1a237e;">Open Date</th>
-                                    <th style="padding: 12px; text-align: center; color: #1a237e;">Close Date</th>
-                                    <th style="padding: 12px; text-align: center; color: #1a237e;">Rating</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {table_rows}
-                            </tbody>
-                        </table>
+                    <div style="margin-bottom: 20px;">
+                        {ipo_cards}
                     </div>
                     
                     <p style="color: #666; font-size: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
