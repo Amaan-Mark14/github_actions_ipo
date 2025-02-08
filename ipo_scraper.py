@@ -8,9 +8,12 @@ from tabulate import tabulate
 import re
 import os
 import smtplib
+import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dateutil import parser
+from cryptography.fernet import Fernet
+
 
 def debug_print(message):
     print(f"[DEBUG {datetime.now()}] {message}")
@@ -36,11 +39,32 @@ def is_within_three_days(close_date_str):
 def is_high_rating(rating):
     return rating in ["4.0/5", "5.0/5"]
 
+def get_recipients():
+    try:
+        encryption_key = os.environ.get('CONFIG_ENCRYPTION_KEY')
+        if not encryption_key:
+            raise ValueError("CONFIG_ENCRYPTION_KEY not found in environment")
+
+        fernet = Fernet(encryption_key)
+        
+        with open('config/recipients.enc.json', 'rb') as f:
+            encrypted_data = f.read()
+        
+        decrypted_data = fernet.decrypt(encrypted_data)
+        config = json.loads(decrypted_data)
+        
+        # Filter only active recipients
+        return [r['email'] for r in config['recipients'] if r['status'] == 'active']
+    
+    except Exception as e:
+        debug_print(f"Error reading recipients: {e}")
+        return []
+
 def send_email(ipo_data):
     sender_email = os.environ.get('GMAIL_USER')
     password = os.environ.get('GMAIL_APP_PASSWORD')
-    recipient_emails = os.environ.get('RECIPIENT_EMAILS').split(',')
-
+    recipient_emails = get_recipients()  
+    
     if not all([sender_email, password, recipient_emails]):
         debug_print("Missing email configuration")
         return
@@ -48,21 +72,69 @@ def send_email(ipo_data):
     # Create base message
     msg = MIMEMultipart()
     msg['From'] = sender_email
-    msg['Subject'] = f"IPO Alerts - {datetime.now().strftime('%Y-%m-%d')}"
-    # Don't set To field in headers - we'll use BCC instead
+    msg['Subject'] = f"🚀 IPO Alerts - {datetime.now().strftime('%d %B %Y')}"
 
     if not ipo_data:
         body = "No qualifying IPOs found for the next 3 days."
     else:
-        headers = ["Name", "Status", "Est Listing", "Open Date", "Close Date", "Rating"]
-        table = tabulate(ipo_data, headers=headers, tablefmt="html")
+        # Create HTML table rows
+        table_rows = "".join(
+            f"""
+            <tr style="border-bottom: 1px solid #dddddd;">
+                <td style="padding: 12px; text-align: left;">{ipo[0]}</td>
+                <td style="padding: 12px; text-align: center;"><span style="background-color: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px;">{ipo[1]}</span></td>
+                <td style="padding: 12px; text-align: right;"><span style="color: {'#2e7d32' if float(ipo[2].replace(' %', '')) > 0 else '#c62828'}">{ipo[2]}</span></td>
+                <td style="padding: 12px; text-align: center;">{ipo[3]}</td>
+                <td style="padding: 12px; text-align: center;">{ipo[4]}</td>
+                <td style="padding: 12px; text-align: center;"><span style="background-color: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px;">{ipo[5]}</span></td>
+            </tr>
+            """
+            for ipo in ipo_data
+        )
+
         body = f"""
         <html>
-            <body>
-                <h2>IPO Alerts - Upcoming Offerings</h2>
-                <p>Here are the highly-rated IPOs closing in the next 3 days:</p>
-                {table}
-                <p>Note: Only showing IPOs with ratings of 4/5 or 5/5</p>
+            <head>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+                </style>
+            </head>
+            <body style="font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 800px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px;">
+                    <h1 style="color: #1a237e; font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">
+                        🎯 IPO Alerts - Upcoming Offerings
+                    </h1>
+                    
+                    <p style="color: #424242; font-size: 16px; margin-bottom: 20px;">
+                        Here are the highly-rated IPOs closing in the next 3 days:
+                    </p>
+                    
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; background-color: white; border-radius: 8px;">
+                            <thead>
+                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dddddd;">
+                                    <th style="padding: 12px; text-align: left; color: #1a237e;">Company</th>
+                                    <th style="padding: 12px; text-align: center; color: #1a237e;">Status</th>
+                                    <th style="padding: 12px; text-align: right; color: #1a237e;">Est Listing</th>
+                                    <th style="padding: 12px; text-align: center; color: #1a237e;">Open Date</th>
+                                    <th style="padding: 12px; text-align: center; color: #1a237e;">Close Date</th>
+                                    <th style="padding: 12px; text-align: center; color: #1a237e;">Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {table_rows}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <p style="color: #666; font-size: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                        ℹ️ Note: Only showing IPOs with ratings of 4/5 or 5/5
+                    </p>
+                    
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #666; font-size: 12px;">
+                        <p>To unsubscribe from these alerts, please contact the administrator.</p>
+                    </div>
+                </div>
             </body>
         </html>
         """
