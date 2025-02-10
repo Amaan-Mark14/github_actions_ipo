@@ -76,7 +76,8 @@ def send_email(ipo_data):
     msg['Subject'] = f"🚀 IPO Alerts - {datetime.now().strftime('%d %B %Y')}"
 
     if not ipo_data:
-        body = "No qualifying IPOs found for the next 3 days."
+        debug_print("No qualifying IPOs found. Skipping email send.")
+        return
     else:
         ipo_cards = "".join(
             f"""
