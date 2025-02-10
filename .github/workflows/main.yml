@@ -2,7 +2,7 @@ name: IPO Notifier Bot
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # Runs daily at 2 AM UTC
+    - cron: '0 5 * * 1-5'  # Runs every Weekday at 5:00 AM UTC (9:30 AM IST)
   workflow_dispatch:  # Allows manual triggering
 
 env:

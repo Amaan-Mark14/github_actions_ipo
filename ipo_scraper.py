@@ -4,11 +4,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime, timedelta
-from tabulate import tabulate
 import re
 import os
 import smtplib
 import json
+import requests
+import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dateutil import parser
@@ -180,10 +181,25 @@ def scrape_ipo_table():
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
+        options.add_argument("--disable-application-cache")
+        options.add_argument("--disable-cache")
+        options.add_argument("--incognito")
         
         url = "https://www.investorgain.com/report/live-ipo-gmp/331/"
+        
+        headers = {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        requests.get(url, headers=headers)
+        time.sleep(2)  
+        
         driver = webdriver.Chrome(options=options)
-        driver.get(url)
+        driver.execute_cdp_cmd('Network.clearBrowserCache', {})
+        driver.execute_cdp_cmd('Network.setCacheDisabled', {'cacheDisabled': True})
+        
+        driver.get(f"{url}?_t={int(time.time())}")
 
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.ID, "report_table"))
