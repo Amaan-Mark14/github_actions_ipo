@@ -14,7 +14,10 @@ This project is an automated system that scrapes IPO (Initial Public Offering) d
 
 The project scrapes data from [InvestorGain](https://www.investorgain.com/report/live-ipo-gmp/331/), a website that provides real-time updates on IPO GMP and other related metrics. InvestorGain uses a **fire rating system** to evaluate IPOs:
 
-- **🔥🔥🔥🔥 (4/5 stars)**: Indicates a GMP of **30% or higher**. These IPOs are considered strong candidates for further investigation.
+![website_sample](./images/website_info.png)
+
+
+- **🔥🔥🔥🔥 (4/5 stars)**: Indicates a GMP of **25% or higher**. These IPOs are considered strong candidates for further investigation.
 - **🔥🔥🔥🔥🔥 (5/5 stars)**: Indicates an even higher GMP and demand.
 
 The notifier focuses on IPOs with ratings of **4/5 or 5/5**, ensuring that only high-potential IPOs are flagged for attention.
@@ -36,6 +39,9 @@ The script is built using **Python** and **Selenium** for web scraping. It autom
    - Open and close dates
    - Rating
 
+![email_body](./images/email_body.png)
+
+
 3. **Encryption**: The script uses **Fernet encryption** to securely store and retrieve email recipient details.
 
 ---
@@ -46,6 +52,7 @@ The script is built using **Python** and **Selenium** for web scraping. It autom
 - **Email Notifications**: The script sends personalized email alerts to subscribers using **SMTP** and **Gmail**. The email is formatted with HTML for a clean and professional look.
 - **Filtering Logic**: The script filters IPOs based on close date and rating, ensuring only relevant IPOs are flagged.
 - **Encryption**: Recipient email addresses are stored in an encrypted JSON file for security.
+- **Mobile Friendly** : The email body uses a card-based layout for better compatibility on mobile devices.
 
 ---
 
