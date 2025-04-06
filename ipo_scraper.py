@@ -82,8 +82,8 @@ def send_email(ipo_data):
         ipo_cards = "".join(
             f"""
             <div class="ipo-card" style="margin-bottom: 20px; border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: white;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                    <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 250px;">
                         <h3 style="margin: 0 0 8px 0; color: #1a237e; font-size: 18px; font-weight: 600;">{ipo[0]}</h3>
                         <div style="margin-bottom: 16px;">
                             <div style="color: #666; font-size: 13px; margin-bottom: 4px;">Est. Listing Gains</div>
@@ -95,8 +95,8 @@ def send_email(ipo_data):
                         </div>
                     </div>
                     
-                    <div style="flex: 1; margin-left: 20px;">
-                        <div style="margin-bottom: 16px;"> <!-- Increased margin for more space -->
+                    <div style="flex: 1; margin-left: 20px; min-width: 250px;">
+                        <div style="margin-bottom: 16px;">
                             <span style="background-color: #e8f5e9; color: #2e7d32; padding: 10px 12px; border-radius: 6px; font-size: 14px; font-weight: 500; display: inline-block; line-height: 1.5;">{ipo[1]}</span>
                         </div>
                         <div style="margin-top: 16px;">
@@ -106,6 +106,10 @@ def send_email(ipo_data):
                         <div>
                             <div style="color: #666; font-size: 13px; margin-bottom: 4px;">Close Date</div>
                             <div style="color: #333; font-size: 15px; font-weight: 500;">{ipo[4]}</div>
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <div style="color: #666; font-size: 13px; margin-bottom: 4px;">Days Remaining</div>
+                            <div style="color: #1565c0; font-size: 15px; font-weight: 500;">{(datetime.strptime(ipo[4], '%d-%m-%Y') - datetime.now()).days} days</div>
                         </div>
                     </div>
                 </div>
