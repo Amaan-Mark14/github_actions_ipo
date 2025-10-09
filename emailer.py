@@ -148,7 +148,7 @@ def send_email(ipo_data):
     if not all([sender_email, password, recipient_emails]):
         missing = []
         if not sender_email: missing.append("GMAIL_USER")
-        if not password: missing.append("GMAIL_APP_PASSWORD")
+        if not password: missing.append("GMAIL_PASSWORD")
         if not recipient_emails: missing.append("EMAIL_RECIPIENTS or config/recipients.txt")
         debug_print(f"Missing email configuration: {', '.join(missing)}")
         return False
