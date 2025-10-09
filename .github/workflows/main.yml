@@ -35,4 +35,4 @@ jobs:
         pip install -r requirements.txt 
     
     - name: Run scraper and send email
-      run: python ipo_scraper.py
+      run: python main.py

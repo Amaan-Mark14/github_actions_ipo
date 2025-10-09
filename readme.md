@@ -40,35 +40,74 @@ The script is built using **Python** and **Selenium** for web scraping. It autom
 
 ![email_body](<readme_images/email_body.png>)
 
-3. **Encryption**: The script uses **Fernet encryption** to securely store and retrieve email recipient details.
-
 ---
 
 ## Key Features
 
 - **Selenium Web Scraping**: The script uses Selenium to scrape the IPO table from the InvestorGain website. It handles dynamic content and ensures the table is fully loaded before extraction.
 - **Email Notifications**: The script sends personalized email alerts to subscribers using **SMTP** and **Gmail**. The email is formatted with HTML for a clean and professional look.
-- **Filtering Logic**: The script filters IPOs based on close date and rating, ensuring only relevant IPOs are flagged.
-- **Encryption**: Recipient email addresses are stored in an encrypted JSON file for security.
-- **Mobile Friendly** : The email body uses a card-based layout for better compatibility on mobile devices.
+- **Filtering Logic**: The script filters IPOs based on rating (4/5 or 5/5), ensuring only high-potential IPOs are flagged.
+- **Mobile Friendly**: The email body uses a card-based layout for better compatibility on mobile devices.
 
 ---
 
 ## Setup Instructions
 
-1. **Install Dependencies**:
-   - Install Python 3.x.
-   - Install required packages: `pip install -r requirements.txt`.
+### 1. Clone the Repository
+```bash
+git clone https://github.com/your-username/github_actions_ipo.git
+cd github_actions_ipo
+```
 
-2. **Configure Environment Variables**:
-   - Set `GMAIL_USER` and `GMAIL_APP_PASSWORD` for email functionality.
-   - Set `CONFIG_ENCRYPTION_KEY` for decrypting recipient data.
+### 2. Set Up Virtual Environment
+```bash
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Unix/Mac:
+source .venv/bin/activate
+```
 
-3. **Run the Script**:
-   - Execute the script: `python ipo_gmp_notifier.py`.
+### 3. Install Dependencies
+```bash
+pip install selenium python-dotenv
+```
 
-4. **Automate with GitHub Actions**:
-   - Schedule the script to run daily using GitHub Actions.
+### 4. Configure Email Settings
+Create a `.env` file in the root directory:
+
+```env
+# Gmail Configuration
+GMAIL_USER=your_email@gmail.com
+GMAIL_APP_PASSWORD=your_gmail_app_password
+
+# Email Recipients (comma-separated)
+EMAIL_RECIPIENTS=recipient1@gmail.com,recipient2@gmail.com
+```
+
+**To get Gmail App Password:**
+1. Go to Google Account settings
+2. Enable 2-factor authentication
+3. Go to Security → App passwords
+4. Generate a new app password for "Mail"
+
+### 5. Add Email Recipients
+Edit `config/recipients.txt` to add/remove email addresses:
+```
+recipient1@gmail.com,recipient2@gmail.com
+```
+
+### 6. Run the Script
+```bash
+python main.py
+```
+
+### 7. Deploy to GitHub Actions
+- Set these as Repository Secrets in GitHub:
+  - `GMAIL_USER`
+  - `GMAIL_APP_PASSWORD`
+  - `EMAIL_RECIPIENTS`
+- The workflow will automatically run daily at 9:00 AM IST
 
 ---
 

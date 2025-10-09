@@ -5,15 +5,13 @@
 __pycache__/
 *.pyc
 
-# Other system files
-.DS_Store
-.conda
-
 # Test files
-scrape.py
 
-# Encryption related files
-recipients.json
-decrypt_config.py
-encrypt_config.py
-.config.key
+# recipients files
+recipients.txt
+
+# Virtual environment
+.venv/
+
+.claude
+claude.md
