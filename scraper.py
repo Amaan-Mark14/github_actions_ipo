@@ -60,18 +60,28 @@ def scrape_ipo_table():
         url = "https://www.investorgain.com/report/live-ipo-gmp/331/open/"
 
         driver = webdriver.Chrome(options=options)
-        driver.get(url)
+        driver.set_page_load_timeout(30)
 
-        WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.ID, "report_table"))
-        )
-        debug_print("Table found!")
+        try:
+            driver.get(url)
+        except Exception as e:
+            debug_print(f"Page load timeout: {e}")
+            return []
 
-        # Wait for table to be fully loaded with rows
-        WebDriverWait(driver, 10).until(
-            lambda d: len(d.find_element(By.ID, "report_table").find_elements(By.TAG_NAME, "tr")) > 1
-        )
-        debug_print("Table rows loaded!")
+        try:
+            WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.ID, "report_table"))
+            )
+            debug_print("Table found!")
+
+            # Wait for table to be fully loaded with rows
+            WebDriverWait(driver, 10).until(
+                lambda d: len(d.find_element(By.ID, "report_table").find_elements(By.TAG_NAME, "tr")) > 1
+            )
+            debug_print("Table rows loaded!")
+        except Exception as e:
+            debug_print(f"Table loading timeout: {e}")
+            return []
 
         table_element = driver.find_element(By.ID, "report_table")
         rows = table_element.find_elements(By.TAG_NAME, "tr")
