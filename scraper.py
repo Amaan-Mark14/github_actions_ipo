@@ -5,10 +5,45 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
 import re
+import json
+import os
 
 
 def debug_print(message):
     print(f"[DEBUG {datetime.now()}] {message}")
+
+
+def update_scraper_status(status, message="", ipo_count=0, error_details=""):
+    """
+    Update scraper status file for GitHub Actions monitoring.
+
+    Args:
+        status: "success", "warning", "error"
+        message: Human readable message
+        ipo_count: Number of IPOs found
+        error_details: Error details if status is "error"
+    """
+    status_data = {
+        "timestamp": datetime.now().isoformat(),
+        "status": status,
+        "message": message,
+        "ipo_count": ipo_count,
+        "error_details": error_details,
+        "workflow_run_id": os.getenv("GITHUB_RUN_ID", "local"),
+        "workflow_run_number": os.getenv("GITHUB_RUN_NUMBER", "local")
+    }
+
+    # Update last successful run timestamp
+    if status == "success":
+        status_data["last_successful_run"] = datetime.now().isoformat()
+
+    status_file = "scraper_status.json"
+    try:
+        with open(status_file, "w") as f:
+            json.dump(status_data, f, indent=2)
+        debug_print(f"Status updated: {status} - {message}")
+    except Exception as e:
+        debug_print(f"Failed to write status file: {e}")
 
 
 def extract_listing_number(text):
@@ -35,6 +70,7 @@ def scrape_ipo_table():
         list: List of IPO data in format [name, closing_status, status, est_listing, open_date, close_date, rating]
     """
     debug_print("Starting IPO table scraping...")
+    update_scraper_status("running", "Scraping started")
 
     try:
         options = Options()
@@ -60,43 +96,51 @@ def scrape_ipo_table():
         url = "https://www.investorgain.com/report/live-ipo-gmp/331/open/"
 
         driver = webdriver.Chrome(options=options)
-        driver.set_page_load_timeout(30)
+        driver.set_page_load_timeout(60)
 
         try:
             driver.get(url)
         except Exception as e:
-            debug_print(f"Page load timeout: {e}")
+            error_msg = f"Page load timeout: {e}"
+            debug_print(error_msg)
+            update_scraper_status("error", error_msg, error_details=str(e))
             return []
 
         try:
-            WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.ID, "report_table"))
+            WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.ID, "reportTable"))
             )
             debug_print("Table found!")
 
-            # Wait for table to be fully loaded with rows
-            WebDriverWait(driver, 10).until(
-                lambda d: len(d.find_element(By.ID, "report_table").find_elements(By.TAG_NAME, "tr")) > 1
+            # Wait for table to be fully loaded with rows (not "No data available")
+            WebDriverWait(driver, 30).until(
+                lambda d: len(d.find_element(By.ID, "tableBody").find_elements(By.TAG_NAME, "tr")) > 0 and
+                "No data available" not in d.find_element(By.ID, "tableBody").text
             )
             debug_print("Table rows loaded!")
         except Exception as e:
-            debug_print(f"Table loading timeout: {e}")
+            error_msg = f"Table loading timeout: {e}"
+            debug_print(error_msg)
+            update_scraper_status("error", error_msg, error_details=str(e))
             return []
 
-        table_element = driver.find_element(By.ID, "report_table")
-        rows = table_element.find_elements(By.TAG_NAME, "tr")
+        table_element = driver.find_element(By.ID, "reportTable")
+        tbody = driver.find_element(By.ID, "tableBody")
+        rows = tbody.find_elements(By.TAG_NAME, "tr")
         ipo_list = []
 
-        debug_print(f"Found {len(rows)} total rows in table")
+        debug_print(f"Found {len(rows)} total rows in table body")
 
-        for i, row in enumerate(rows[1:], 1):
+        for i, row in enumerate(rows, 1):
             cells = row.find_elements(By.TAG_NAME, "td")
             if len(cells) < 8:
                 continue
 
             try:
-                # 1. Name (column 0)
-                full_name = cells[0].text.strip()
+                # 1. Name (column 0) - extract from link inside div.mono-num
+                name_div = cells[0].find_element(By.CSS_SELECTOR, "div.mono-num")
+                name_link = name_div.find_element(By.TAG_NAME, "a")
+                full_name = name_link.text.strip()
 
                 # Extract closing status from name
                 closing_status = ""
@@ -130,11 +174,20 @@ def scrape_ipo_table():
                 debug_print(f"Skipping row {i} due to error: {e}")
                 continue
 
-        debug_print(f"Processed {len(rows)-1} rows, found {len(ipo_list)} high-rated IPOs")
+        debug_print(f"Processed {len(rows)} rows, found {len(ipo_list)} high-rated IPOs")
+
+        # Update status based on results
+        if len(ipo_list) > 0:
+            update_scraper_status("success", f"Successfully scraped {len(ipo_list)} high-rated IPOs", len(ipo_list))
+        else:
+            update_scraper_status("warning", "No high-rated IPOs found - scraper may be working but no matching IPOs", 0)
+
         return ipo_list
 
     except Exception as e:
-        debug_print(f"Error occurred during IPO scraping: {e}")
+        error_msg = f"Error occurred during IPO scraping: {e}"
+        debug_print(error_msg)
+        update_scraper_status("error", error_msg, error_details=str(e))
         return []
     finally:
         driver.quit()

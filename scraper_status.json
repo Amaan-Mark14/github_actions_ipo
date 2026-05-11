@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-05-11T15:16:55.079764",
+  "status": "warning",
+  "message": "No high-rated IPOs found - scraper may be working but no matching IPOs",
+  "ipo_count": 0,
+  "error_details": "",
+  "workflow_run_id": "local",
+  "workflow_run_number": "local"
+}
