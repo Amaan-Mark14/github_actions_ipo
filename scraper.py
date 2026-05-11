@@ -114,7 +114,7 @@ def scrape_ipo_table():
 
             # Wait for table to be fully loaded with rows (not "No data available")
             WebDriverWait(driver, 30).until(
-                lambda d: len(d.find_element(By.ID, "tableBody").find_elements(By.TAG_NAME, "tr")) > 0 and
+                lambda d: len(d.find_elements(By.CSS_SELECTOR, "#tableBody tr")) > 0 and
                 "No data available" not in d.find_element(By.ID, "tableBody").text
             )
             debug_print("Table rows loaded!")
@@ -124,9 +124,8 @@ def scrape_ipo_table():
             update_scraper_status("error", error_msg, error_details=str(e))
             return []
 
-        table_element = driver.find_element(By.ID, "reportTable")
-        tbody = driver.find_element(By.ID, "tableBody")
-        rows = tbody.find_elements(By.TAG_NAME, "tr")
+        # Re-find elements to avoid stale references
+        rows = driver.find_elements(By.CSS_SELECTOR, "#tableBody tr")
         ipo_list = []
 
         debug_print(f"Found {len(rows)} total rows in table body")
